@@ -1,5 +1,5 @@
 import BigNumber from "bignumber.js";
-import { TokenId } from "@hashgraph/sdk";
+import { TokenId, Client, ContractId, AccountId } from "@hashgraph/sdk"; // Added Client, ContractId, AccountId
 import { CreateTokenOptions } from "../tools/hts/transactions/create_token";
 
 export type HederaNetworkType = "mainnet" | "testnet" | "previewnet"| "localnode";
@@ -7,31 +7,33 @@ export type HederaNetworkType = "mainnet" | "testnet" | "previewnet"| "localnode
 export type TokenBalance = {
     account: string;
     balance: number;
-    decimals: number;
+    // Removed decimals - often not present in basic balance list
 };
 
-export type TokenHoldersBalancesApiResponse = {
-    timestamp: string;
-    balances: TokenBalance[];
-    links: {
-        next: string; // link to the next page
-    };
-};
-
+// Kept DetailedTokenBalance definition if used elsewhere
 export type DetailedTokenBalance= {
     tokenId: string;
     tokenSymbol: string;
     tokenName: string;
-    tokenDecimals: string;
+    tokenDecimals: string; // Usually a string from API
     balance: number;
     balanceInDisplayUnit: BigNumber;
 }
+
+// --- API Response Types (kept as is) ---
+export type TokenHoldersBalancesApiResponse = {
+    timestamp: string;
+    balances: TokenBalance[];
+    links: {
+        next: string | null; // Allow null
+    };
+};
 
 export type HtsTokenBalanceApiReponse = {
     timestamp: string;
     balances: TokenBalance[];
     links: {
-        next: string;
+        next: string | null; // Allow null
     };
 };
 
@@ -47,35 +49,35 @@ type CustomFees = {
 };
 
 export type HtsTokenDetails = {
-    admin_key: ProtobufEncodedKey;
-    auto_renew_account: string;
-    auto_renew_period: number;
+    admin_key: ProtobufEncodedKey | null; // Allow null
+    auto_renew_account: string | null; // Allow null
+    auto_renew_period: number | null; // Allow null
     created_timestamp: string;
     custom_fees: CustomFees;
-    decimals: string;
+    decimals: string; // Kept as string (API often returns string)
     deleted: boolean;
-    expiry_timestamp: number;
-    fee_schedule_key: ProtobufEncodedKey;
+    expiry_timestamp: number | null; // Allow null
+    fee_schedule_key: ProtobufEncodedKey | null; // Allow null
     freeze_default: boolean;
-    freeze_key: ProtobufEncodedKey;
+    freeze_key: ProtobufEncodedKey | null; // Allow null
     initial_supply: string;
-    kyc_key: ProtobufEncodedKey;
+    kyc_key: ProtobufEncodedKey | null; // Allow null
     max_supply: string;
     memo: string;
     metadata: string;
     metadata_key: ProtobufEncodedKey | null;
     modified_timestamp: string;
     name: string;
-    pause_key: ProtobufEncodedKey;
+    pause_key: ProtobufEncodedKey | null; // Allow null
     pause_status: "PAUSED" | "UNPAUSED";
-    supply_key: ProtobufEncodedKey;
+    supply_key: ProtobufEncodedKey | null; // Allow null
     supply_type: "FINITE" | "INFINITE";
     symbol: string;
     token_id: string;
     total_supply: string;
     treasury_account_id: string;
     type: "FUNGIBLE_COMMON" | "NON_FUNGIBLE_UNIQUE";
-    wipe_key: ProtobufEncodedKey;
+    wipe_key: ProtobufEncodedKey | null; // Allow null
 };
 
 export type AllTokensBalancesApiResponse = {
@@ -154,7 +156,7 @@ export type CreateTopicResult = {
 
 export type DeleteTopicResult = {
     status: string,
-    txHash: string,
+    txHah: string,
 }
 
 export type MintTokenResult = {
@@ -165,6 +167,7 @@ export type MintTokenResult = {
 export type MintNFTResult = {
     status: string,
     txHash: string,
+    serials: number[]; // Added serials for NFT mint result
 }
 
 export type AssetAllowanceResult = {
@@ -226,3 +229,40 @@ export interface CreateNFTOptions extends Omit<CreateTokenOptions, "tokenType" |
 export interface CreateFTOptions extends Omit<CreateTokenOptions, "tokenType" | "client"> {
 }
 
+// --- SaucerSwap V2 Types ---
+
+/**
+ * Result from the get_swap_quote tool.
+ * Amounts are in the smallest unit of the respective tokens.
+ */
+export type SwapQuote = {
+    amountIn: string;  // Amount of input token (smallest unit)
+    amountOut: string; // Quoted amount of output token (smallest unit)
+    // Removed isExactInput as it's implied by the function called
+}
+
+/**
+ * Parameters required by the swap_exact_tokens tool.
+ */
+export type SwapExactTokensParams = {
+    client: Client;
+    routerContractId: ContractId;
+    routerAbi: any[]; // ABI definition for the router
+    path: string[]; // Array of token EVM addresses (0x...)
+    amountIn: string; // Exact amount of input token (smallest unit)
+    amountOutMin: string; // Minimum acceptable output amount (smallest unit)
+    recipient: string; // EVM address (0x...) of the recipient
+    deadline: number; // Unix timestamp (seconds)
+    hbarAmount?: string; // Amount of HBAR (in tinybars) to send, if input token is HBAR/WHBAR
+    unwrapWHBAR?: boolean; // Set to true if the output token is HBAR (to unwrap WHBAR)
+};
+
+/**
+ * Result from the swap_exact_tokens tool.
+ */
+export type SwapExactTokensResult = {
+    status: "SUCCESS" | "ERROR" | string; // Status of the swap transaction
+    txHash: string; // Transaction hash/ID
+    amountIn?: string; // Actual amount swapped in (smallest unit) - Optional, might not always be returned by tool
+    amountOut?: string; // Actual amount received (smallest unit) - Optional, might not always be returned by tool
+}

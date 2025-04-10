@@ -25,7 +25,8 @@
     "@langchain/langgraph": "^0.2.34",
     "@langchain/openai": "^0.3.16",
     "bignumber.js": "^9.1.2",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.5"
   },
   "repository": {
     "type": "git",
